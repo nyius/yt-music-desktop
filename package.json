@@ -1,0 +1,43 @@
+{
+	"name": "youtube-music-desktop",
+	"version": "1.0.0",
+	"description": "Desktop application for YouTube Music with navigation controls",
+	"main": "src/main.js",
+	"scripts": {
+		"start": "electron .",
+		"build": "electron-builder",
+		"dist": "electron-builder --win",
+		"pack": "electron-builder --dir"
+	},
+	"keywords": [
+		"electron",
+		"youtube-music",
+		"desktop",
+		"windows"
+	],
+	"author": "Your Name",
+	"license": "MIT",
+	"devDependencies": {
+		"electron": "^27.0.0",
+		"electron-builder": "^24.6.4"
+	},
+	"build": {
+		"appId": "com.yourname.youtube-music-desktop",
+		"productName": "YouTube Music Desktop",
+		"directories": {
+			"output": "dist"
+		},
+		"files": [
+			"src/**/*",
+			"node_modules/**/*"
+		],
+		"win": {
+			"target": "nsis",
+			"icon": "assets/icon.ico"
+		},
+		"nsis": {
+			"oneClick": false,
+			"allowToChangeInstallationDirectory": true
+		}
+	}
+}
