@@ -5,10 +5,6 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		<title>YouTube Music Desktop</title>
 		<style>
-			:root {
-				--zoom-level: 1;
-			}
-
 			* {
 				margin: 0;
 				padding: 0;
@@ -18,355 +14,115 @@
 			body {
 				font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 				height: 100vh;
-				display: flex;
-				flex-direction: column;
 				background: #000;
+				overflow: hidden;
 			}
 
-			.content-frame {
-				flex: 1;
+			.loading-overlay {
+				position: fixed;
+				top: 0;
+				left: 0;
 				width: 100%;
-				border: none;
-				background: #000;
-			}
-
-			.loading {
-				position: absolute;
-				top: 50%;
-				left: 50%;
-				transform: translate(-50%, -50%);
+				height: 100%;
+				background: rgba(0, 0, 0, 0.8);
+				display: flex;
+				align-items: center;
+				justify-content: center;
 				color: #fff;
 				font-size: 16px;
-				z-index: 10;
+				z-index: 1000;
+				opacity: 0;
+				visibility: hidden;
+				transition: opacity 0.3s ease;
+			}
+
+			.loading-overlay.visible {
+				opacity: 1;
+				visibility: visible;
+			}
+
+			.loading-content {
+				text-align: center;
+			}
+
+			.loading-spinner {
+				border: 3px solid #333;
+				border-top: 3px solid #fff;
+				border-radius: 50%;
+				width: 40px;
+				height: 40px;
+				animation: spin 1s linear infinite;
+				margin: 0 auto 16px;
+			}
+
+			@keyframes spin {
+				0% {
+					transform: rotate(0deg);
+				}
+				100% {
+					transform: rotate(360deg);
+				}
 			}
 		</style>
 	</head>
 	<body>
-		<div class="loading" id="loading">Loading YouTube Music...</div>
-
-		<webview id="webview" class="content-frame" nodeintegration="false" webpreferences="contextIsolation=true" partition="persist:youtube-music"></webview>
+		<div class="loading-overlay" id="loading">
+			<div class="loading-content">
+				<div class="loading-spinner"></div>
+				<div>Loading YouTube Music...</div>
+			</div>
+		</div>
 
 		<script>
-			const webview = document.getElementById('webview');
-			const loading = document.getElementById('loading');
+			// Initialize the application
+			const electronAPI = window.electronAPI;
 
-			// Zoom functionality
-			let zoomLevel = 1;
-			const minZoom = 0.5;
-			const maxZoom = 3;
-			const zoomStep = 0.1;
-
-			function updateZoom() {
-				// Update CSS custom property for zoom scaling
-				document.documentElement.style.setProperty('--zoom-level', zoomLevel);
-
-				// Apply zoom to webview content only if webview is ready
-				try {
-					if (webview && typeof webview.setZoomFactor === 'function') {
-						webview.setZoomFactor(zoomLevel);
-					}
-				} catch (error) {
-					console.warn('Failed to set webview zoom factor:', error);
-				}
-
-				// Store zoom level in localStorage for persistence
-				localStorage.setItem('zoomLevel', zoomLevel);
-
-				console.log('Zoom level updated to:', zoomLevel);
-			}
-
-			function zoomIn() {
-				if (zoomLevel < maxZoom) {
-					zoomLevel = Math.round((zoomLevel + zoomStep) * 10) / 10;
-					updateZoom();
-				}
-			}
-
-			function zoomOut() {
-				console.log('Zoom out clicked, current level:', zoomLevel);
-				if (zoomLevel > minZoom) {
-					zoomLevel = Math.round((zoomLevel - zoomStep) * 10) / 10;
-					updateZoom();
-				}
-			}
-
-			function resetZoom() {
-				console.log('Reset zoom clicked, current level:', zoomLevel);
-				zoomLevel = 1;
-				updateZoom();
-				console.log('Reset zoom to:', zoomLevel);
-			}
-
-			// Load saved zoom level on startup
-			function loadSavedZoom() {
-				const savedZoom = localStorage.getItem('zoomLevel');
-				if (savedZoom) {
-					zoomLevel = parseFloat(savedZoom);
-					if (zoomLevel < minZoom) zoomLevel = minZoom;
-					if (zoomLevel > maxZoom) zoomLevel = maxZoom;
-				}
-				updateZoom();
-			}
-
-			// Expose zoom functions globally for menu access
-			window.zoomIn = zoomIn;
-			window.zoomOut = zoomOut;
-			window.resetZoom = resetZoom;
-
-			// URL persistence functionality
-			function saveCurrentUrl() {
-				try {
-					const currentUrl = webview.getURL();
-					if (currentUrl && currentUrl.includes('music.youtube.com')) {
-						localStorage.setItem('lastVisitedUrl', currentUrl);
-					}
-				} catch (error) {
-					console.warn('Failed to save current URL:', error);
-				}
-			}
-
-			function loadLastVisitedUrl() {
-				try {
-					const savedUrl = localStorage.getItem('lastVisitedUrl');
-					if (savedUrl && savedUrl.includes('music.youtube.com')) {
-						return savedUrl;
-					}
-				} catch (error) {
-					console.warn('Failed to load saved URL:', error);
-				}
-				return 'https://music.youtube.com/'; // Default fallback
-			}
-
-			// Debounce function to avoid saving too frequently
-			let saveUrlTimeout;
-			function debouncedSaveUrl() {
-				clearTimeout(saveUrlTimeout);
-				saveUrlTimeout = setTimeout(saveCurrentUrl, 1000); // Save after 1 second of inactivity
-			}
-
-			// Combined function to handle navigation and save URL
-			function handleNavigation() {
-				debouncedSaveUrl();
-			}
-
-			// Webview event listeners
-			webview.addEventListener('did-navigate', handleNavigation);
-			webview.addEventListener('did-navigate-in-page', handleNavigation);
-
-			webview.addEventListener('did-start-loading', () => {
-				loading.style.display = 'block';
-			});
-
-			webview.addEventListener('did-stop-loading', () => {
-				loading.style.display = 'none';
-				// Apply zoom after page loads
-				try {
-					webview.setZoomFactor(zoomLevel);
-				} catch (error) {
-					console.warn('Failed to apply zoom after loading:', error);
-				}
-			});
-			console.log('first');
-
-			// Forward webview console messages to main console
-			webview.addEventListener('console-message', e => {
-				console.log(`[WEBVIEW] ${e.level}: ${e.message}`);
-			});
-
-			// Multiple event listeners for better debugging
-			webview.addEventListener('did-attach', () => {
-				// console.log('WEBVIEW: did-attach event fired');
-			});
-
-			let scriptInjected = false; // Prevent multiple injections
-
-			webview.addEventListener('did-finish-load', () => {
-				if (!scriptInjected) {
-					injectAudioScript();
+			// Handle loading states from main process
+			electronAPI.onYouTubeLoading((event, isLoading) => {
+				const loading = document.getElementById('loading');
+				if (isLoading) {
+					loading.classList.add('visible');
+				} else {
+					loading.classList.remove('visible');
 				}
 			});
 
-			webview.addEventListener('dom-ready', () => {
-				if (!scriptInjected) {
-					injectAudioScript();
+			// Handle navigation state changes
+			electronAPI.onNavigationChanged((event, data) => {
+				// Navigation state changed - could update UI elements here if needed
+				console.log('Navigation changed:', data);
+			});
+
+			// Handle OAuth tokens
+			electronAPI.onOAuthTokens((event, data) => {
+				console.log('OAuth tokens received:', data);
+				if (data.success && data.tokens) {
+					console.log('Injecting authentication tokens...');
+					electronAPI.injectOAuthTokens(data.tokens);
 				}
 			});
 
-			// Function to inject audio normalization script
-			function injectAudioScript() {
-				console.log('WEBVIEW: About to inject audio normalization script');
-				scriptInjected = true; // Mark as injected to prevent duplicates
-				webview
-					.executeJavaScript(
-						`
-                // Audio normalization functionality (using window properties to avoid redeclaration)
-                if (!window.audioNormalizationInitialized) {
-                    window.audioNormalizationInitialized = true;
-                    
-                    // Make variables accessible globally for debugging
-                    window.audioContext = null;
-                    window.compressor = null;
-                    window.gainNode = null;
-                    window.mediaElementSource = null;
-                    window.isNormalizationEnabled = true;
-                    console.log('WEBVIEW SCRIPT: Audio normalization script loaded')
+			// Handle OAuth errors
+			electronAPI.onOAuthError((event, data) => {
+				console.error('OAuth error received:', data);
+				alert(`Login failed: ${data.error}`);
+			});
 
-                function initializeAudioNormalization() {
-                    const observer = new MutationObserver(() => {
-                        const videoElement = document.querySelector('video');
-                        if (videoElement && !window.mediaElementSource) {
-                            setupAudioProcessing(videoElement);
-                        }
-                    });
-
-                    observer.observe(document.body, {
-                        childList: true,
-                        subtree: true
-                    });
-
-                    setTimeout(() => {
-                        const videoElement = document.querySelector('video');
-                        if (videoElement && !window.mediaElementSource) {
-                            setupAudioProcessing(videoElement);
-                        }
-                    }, 2000);
-                }
-
-                function setupAudioProcessing(videoElement) {
-                    try {
-                        window.audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                        window.mediaElementSource = window.audioContext.createMediaElementSource(videoElement);
-                        
-                        window.compressor = window.audioContext.createDynamicsCompressor();
-                        window.compressor.threshold.setValueAtTime(-24, window.audioContext.currentTime);
-                        window.compressor.knee.setValueAtTime(30, window.audioContext.currentTime);
-                        window.compressor.ratio.setValueAtTime(12, window.audioContext.currentTime);
-                        window.compressor.attack.setValueAtTime(0.003, window.audioContext.currentTime);
-                        window.compressor.release.setValueAtTime(0.25, window.audioContext.currentTime);
-                        
-                        window.gainNode = window.audioContext.createGain();
-                        window.gainNode.gain.setValueAtTime(0.8, window.audioContext.currentTime);
-                        
-                        if (window.isNormalizationEnabled) {
-                            window.mediaElementSource.connect(window.compressor);
-                            window.compressor.connect(window.gainNode);
-                            window.gainNode.connect(window.audioContext.destination);
-                        } else {
-                            window.mediaElementSource.connect(window.audioContext.destination);
-                        }
-                        
-                        console.log('Audio normalization initialized successfully');
-                        
-                        if (audioContext.state === 'suspended') {
-                            videoElement.addEventListener('play', () => {
-                                audioContext.resume();
-                            }, { once: true });
-                        }
-                        
-                    } catch (error) {
-                        console.warn('Audio normalization setup failed:', error);
-                    }
-                }
-
-                function toggleAudioNormalization() {
-                    if (!window.audioContext || !window.mediaElementSource) {
-                        console.warn('Audio normalization not initialized');
-                        return;
-                    }
-                    
-                    try {
-                        window.mediaElementSource.disconnect();
-                        if (window.compressor) window.compressor.disconnect();
-                        if (window.gainNode) window.gainNode.disconnect();
-                        
-                        if (window.isNormalizationEnabled) {
-                            window.mediaElementSource.connect(window.audioContext.destination);
-                            console.log('Audio normalization disabled');
-                        } else {
-                            window.mediaElementSource.connect(window.compressor);
-                            window.compressor.connect(window.gainNode);
-                            window.gainNode.connect(window.audioContext.destination);
-                            console.log('Audio normalization enabled');
-                        }
-                        
-                        window.isNormalizationEnabled = !window.isNormalizationEnabled;
-                        
-                    } catch (error) {
-                        console.warn('Error toggling audio normalization:', error);
-                    }
-                }
-
-                window.toggleAudioNormalization = toggleAudioNormalization;
-                
-                if (document.readyState === 'loading') {
-                    document.addEventListener('DOMContentLoaded', initializeAudioNormalization);
-                } else {
-                    initializeAudioNormalization();
-                }
-                
-                } // End of if (!window.audioNormalizationInitialized)
-            `
-					)
-					.then(() => {
-						//
-					})
-					.catch(error => {
-						console.error('WEBVIEW: Failed to inject audio normalization script:', error);
-					});
-
-				// Apply zoom to webview after script injection
-				try {
-					webview.setZoomFactor(zoomLevel);
-				} catch (error) {
-					console.warn('WEBVIEW: Failed to apply zoom after script injection:', error);
-				}
-			}
-
-			// Keyboard shortcuts
-			document.addEventListener('keydown', e => {
+			// Keyboard shortcuts for zoom
+			document.addEventListener('keydown', async e => {
 				if (e.ctrlKey && (e.key === '=' || e.key === '+')) {
 					e.preventDefault();
-					zoomIn();
+					await electronAPI.zoomIn();
 				} else if (e.ctrlKey && (e.key === '-' || e.key === '_')) {
 					e.preventDefault();
-					zoomOut();
+					await electronAPI.zoomOut();
 				} else if (e.ctrlKey && e.key === '0') {
 					e.preventDefault();
-					resetZoom();
+					await electronAPI.resetZoom();
 				}
 			});
 
-			// Initialize
-			loadSavedZoom();
-
-			// Load the last visited URL or default to YouTube Music homepage
-			const initialUrl = loadLastVisitedUrl();
-
-			// Use loadURL with Firefox user agent to bypass Google's Electron detection
-			webview.addEventListener(
-				'dom-ready',
-				() => {
-					console.log('WEBVIEW: Setting Firefox user agent');
-					webview.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:130.0) Gecko/20100101 Firefox/130.0');
-				},
-				{ once: true }
-			);
-
-			webview.src = initialUrl;
-
-			// Handle OAuth success from main process
-			const { ipcRenderer } = require('electron');
-			ipcRenderer.on('oauth-success', (event, data) => {
-				console.log('OAuth success received:', data);
-				// You can use the OAuth code here to make authenticated requests
-				// For now, just reload the page to check if login worked
-				webview.reload();
-			});
-
-			// Save URL when window is about to close
-			window.addEventListener('beforeunload', () => {
-				saveCurrentUrl();
-			});
+			console.log('YouTube Music Desktop renderer initialized');
 		</script>
 	</body>
 </html>
