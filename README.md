@@ -7,15 +7,14 @@ A simple desktop application for Windows that displays YouTube Music with naviga
 -   Loads YouTube Music (https://music.youtube.com/) in a dedicated window
 -   **Custom Navigation Bar**: Built-in navigation controls with visual buttons
 -   **Persistent Login**: Stays logged in to your YouTube Music account between app sessions
+-   **Page Persistence**: Remembers and restores the last page you were on when reopening the app
 -   **Audio Normalization**: Automatically balances volume levels between songs to prevent loud/quiet inconsistencies
 -   **Interface Scaling**: Zoom in/out functionality that scales both YouTube Music content and navigation bar
 -   **Navigation Controls** (available in navigation bar and keyboard shortcuts):
     -   Back (Alt+Left) - ← button
     -   Forward (Alt+Right) - → button
     -   Refresh (F5) - ⟳ button
-    -   Home (Ctrl+H) - 🏠 button (returns to YouTube Music homepage)
-    -   Audio Normalization Toggle (Ctrl+N) - 🔊 button with status indicator
--   **Zoom Controls** (available in navigation bar and keyboard shortcuts):
+-   **Zoom Controls** (available in 'View' dropdown and keyboard shortcuts):
     -   Zoom In (Ctrl++) - + button
     -   Zoom Out (Ctrl+-) - − button
     -   Reset Zoom (Ctrl+0) - ⚬ button
@@ -24,6 +23,8 @@ A simple desktop application for Windows that displays YouTube Music with naviga
     -   Audio normalization status indicator (green = on, red = off)
     -   Loading indicator when pages are loading
     -   Zoom level persists between app sessions
+        **Audio Enhancements**:
+    -   Audio Normalization Toggle (Ctrl+N) - Normalizes all audio to be a similar volume
 -   Additional shortcuts:
     -   Toggle Fullscreen (F11)
     -   Developer Tools (F12)
@@ -86,5 +87,6 @@ This will create a `dist` folder with the Windows installer.
 -   All navigation is handled through the application menu or keyboard shortcuts
 -   **Login data is stored locally** in `%APPDATA%\YouTube Music Desktop` for persistence
 -   Use "Clear Login Data" from the Navigation menu if you want to log out completely
+-   **Page persistence** automatically saves your current page and restores it on next launch
 -   **Audio normalization** uses dynamic range compression to balance volume levels automatically
 -   Audio processing may take a moment to initialize when songs start playing

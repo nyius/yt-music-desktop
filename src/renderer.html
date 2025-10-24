@@ -165,7 +165,7 @@
 
 		<div class="loading" id="loading">Loading YouTube Music...</div>
 
-		<webview id="webview" class="content-frame" src="https://music.youtube.com/" nodeintegration="false" webpreferences="contextIsolation=true" partition="persist:youtube-music"></webview>
+		<webview id="webview" class="content-frame" nodeintegration="false" webpreferences="contextIsolation=true" partition="persist:youtube-music"></webview>
 
 		<script>
 			const webview = document.getElementById('webview');
@@ -173,8 +173,6 @@
 			const forwardBtn = document.getElementById('forwardBtn');
 			const refreshBtn = document.getElementById('refreshBtn');
 			const loading = document.getElementById('loading');
-
-			let isAudioNormalizationEnabled = true;
 
 			// Zoom functionality
 			let zoomLevel = 1;
@@ -202,13 +200,9 @@
 			}
 
 			function zoomIn() {
-				console.log('Zoom in clicked, current level:', zoomLevel);
 				if (zoomLevel < maxZoom) {
 					zoomLevel = Math.round((zoomLevel + zoomStep) * 10) / 10;
 					updateZoom();
-					console.log('Zoomed in to:', zoomLevel);
-				} else {
-					console.log('Already at max zoom');
 				}
 			}
 
@@ -217,9 +211,6 @@
 				if (zoomLevel > minZoom) {
 					zoomLevel = Math.round((zoomLevel - zoomStep) * 10) / 10;
 					updateZoom();
-					console.log('Zoomed out to:', zoomLevel);
-				} else {
-					console.log('Already at min zoom');
 				}
 			}
 
@@ -246,6 +237,39 @@
 			window.zoomOut = zoomOut;
 			window.resetZoom = resetZoom;
 
+			// URL persistence functionality
+			function saveCurrentUrl() {
+				try {
+					const currentUrl = webview.getURL();
+					if (currentUrl && currentUrl.includes('music.youtube.com')) {
+						localStorage.setItem('lastVisitedUrl', currentUrl);
+						console.log('Saved URL:', currentUrl);
+					}
+				} catch (error) {
+					console.warn('Failed to save current URL:', error);
+				}
+			}
+
+			function loadLastVisitedUrl() {
+				try {
+					const savedUrl = localStorage.getItem('lastVisitedUrl');
+					if (savedUrl && savedUrl.includes('music.youtube.com')) {
+						console.log('Loading saved URL:', savedUrl);
+						return savedUrl;
+					}
+				} catch (error) {
+					console.warn('Failed to load saved URL:', error);
+				}
+				return 'https://music.youtube.com/'; // Default fallback
+			}
+
+			// Debounce function to avoid saving too frequently
+			let saveUrlTimeout;
+			function debouncedSaveUrl() {
+				clearTimeout(saveUrlTimeout);
+				saveUrlTimeout = setTimeout(saveCurrentUrl, 1000); // Save after 1 second of inactivity
+			}
+
 			// Navigation functions
 			backBtn.addEventListener('click', () => {
 				if (webview.canGoBack()) {
@@ -269,9 +293,15 @@
 				forwardBtn.disabled = !webview.canGoForward();
 			}
 
+			// Combined function to update navigation and save URL
+			function handleNavigation() {
+				updateNavigationButtons();
+				debouncedSaveUrl();
+			}
+
 			// Webview event listeners
-			webview.addEventListener('did-navigate', updateNavigationButtons);
-			webview.addEventListener('did-navigate-in-page', updateNavigationButtons);
+			webview.addEventListener('did-navigate', handleNavigation);
+			webview.addEventListener('did-navigate-in-page', handleNavigation);
 
 			webview.addEventListener('did-start-loading', () => {
 				loading.style.display = 'block';
@@ -287,16 +317,51 @@
 					console.warn('Failed to apply zoom after loading:', error);
 				}
 			});
+			console.log('first');
+
+			// Forward webview console messages to main console
+			webview.addEventListener('console-message', e => {
+				console.log(`[WEBVIEW] ${e.level}: ${e.message}`);
+			});
+
+			// Multiple event listeners for better debugging
+			webview.addEventListener('did-attach', () => {
+				console.log('WEBVIEW: did-attach event fired');
+			});
+
+			let scriptInjected = false; // Prevent multiple injections
+
+			webview.addEventListener('did-finish-load', () => {
+				console.log('WEBVIEW: did-finish-load event fired');
+				if (!scriptInjected) {
+					injectAudioScript();
+				}
+			});
 
 			webview.addEventListener('dom-ready', () => {
-				// Inject the audio normalization script into the webview
-				webview.executeJavaScript(`
-                // Audio normalization functionality
-                let audioContext;
-                let compressor;
-                let gainNode;
-                let mediaElementSource;
-                let isNormalizationEnabled = true;
+				console.log('WEBVIEW: dom-ready event fired');
+				if (!scriptInjected) {
+					injectAudioScript();
+				}
+			});
+
+			// Function to inject audio normalization script
+			function injectAudioScript() {
+				console.log('WEBVIEW: About to inject audio normalization script');
+				scriptInjected = true; // Mark as injected to prevent duplicates
+				webview
+					.executeJavaScript(
+						`
+                // Audio normalization functionality (using window properties to avoid redeclaration)
+                if (!window.audioNormalizationInitialized) {
+                    window.audioNormalizationInitialized = true;
+                    
+                    let audioContext;
+                    let compressor;
+                    let gainNode;
+                    let mediaElementSource;
+                    let isNormalizationEnabled = true;
+                    console.log('WEBVIEW SCRIPT: Audio normalization script loaded')
 
                 function initializeAudioNormalization() {
                     const observer = new MutationObserver(() => {
@@ -390,16 +455,25 @@
                 } else {
                     initializeAudioNormalization();
                 }
-            `);
+                
+                } // End of if (!window.audioNormalizationInitialized)
+            `
+					)
+					.then(() => {
+						console.log('WEBVIEW: Audio normalization script injected successfully');
+					})
+					.catch(error => {
+						console.error('WEBVIEW: Failed to inject audio normalization script:', error);
+					});
 
-				// Apply zoom to webview after DOM is ready
+				// Apply zoom to webview after script injection
 				try {
 					webview.setZoomFactor(zoomLevel);
-					console.log('Applied zoom factor on dom-ready:', zoomLevel);
+					console.log('WEBVIEW: Applied zoom factor after script injection:', zoomLevel);
 				} catch (error) {
-					console.warn('Failed to apply zoom on dom-ready:', error);
+					console.warn('WEBVIEW: Failed to apply zoom after script injection:', error);
 				}
-			});
+			}
 
 			// Keyboard shortcuts
 			document.addEventListener('keydown', e => {
@@ -426,6 +500,15 @@
 
 			// Initialize
 			loadSavedZoom();
+
+			// Load the last visited URL or default to YouTube Music homepage
+			const initialUrl = loadLastVisitedUrl();
+			webview.src = initialUrl;
+
+			// Save URL when window is about to close
+			window.addEventListener('beforeunload', () => {
+				saveCurrentUrl();
+			});
 		</script>
 	</body>
 </html>

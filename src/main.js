@@ -94,17 +94,59 @@ function createWindow() {
 					label: 'Toggle Audio Normalization',
 					accelerator: 'Ctrl+N',
 					click: () => {
-						mainWindow.webContents.executeJavaScript('window.toggleAudioNormalization && window.toggleAudioNormalization()');
+						// Execute in the renderer process which will then call the webview
+						mainWindow.webContents
+							.executeJavaScript(
+								`
+							console.log('Menu: Toggle Audio Normalization clicked');
+							
+							if (document.getElementById('webview')) {
+								console.log('Menu: Webview found, executing toggleAudioNormalization');
+								console.log('Menu: Webview src:', document.getElementById('webview').src);
+								console.log('Menu: Webview ready state:', document.getElementById('webview').getWebContents ? 'WebContents available' : 'WebContents not available');
+								
+								// First try a simple test
+								document.getElementById('webview').executeJavaScript('console.log("Webview: Simple test successful"); "test-result"')
+									.then(result => {
+										console.log('Menu: Simple test completed successfully, result:', result);
+										
+										// Now try the actual toggle
+										const script = \`
+											console.log("Webview: About to toggle audio normalization");
+											if (window.toggleAudioNormalization) {
+												window.toggleAudioNormalization();
+												console.log("Webview: Audio normalization toggled");
+												"toggle-success";
+											} else {
+												console.warn("Webview: toggleAudioNormalization function not found");
+												console.log("Webview: Available window properties:", Object.keys(window).filter(key => key.includes('audio') || key.includes('toggle')));
+												"toggle-function-not-found";
+											}
+										\`;
+										
+										return document.getElementById('webview').executeJavaScript(script);
+									})
+									.then(result => console.log('Menu: Toggle completed, result:', result))
+									.catch(error => console.error('Menu: executeJavaScript failed:', error));
+							} else {
+								console.error('Menu: Webview element not found');
+							}
+						`
+							)
+							.catch(error => console.error('Main executeJavaScript error:', error));
 					},
 				},
 				{
 					label: 'Audio Info',
 					click: () => {
 						mainWindow.webContents.executeJavaScript(`
-							const info = window.audioContext ? 
-								'Audio normalization is initialized. State: ' + window.audioContext.state :
-								'Audio normalization not yet initialized';
-							alert(info);
+							if (document.getElementById('webview')) {
+								document.getElementById('webview').executeJavaScript(\`
+									alert(window.audioContext ? 
+										'Audio normalization is initialized. State: ' + window.audioContext.state :
+										'Audio normalization not yet initialized');
+								\`);
+							}
 						`);
 					},
 				},
