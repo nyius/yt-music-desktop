@@ -15,29 +15,33 @@
 		"desktop",
 		"windows"
 	],
-	"author": "Your Name",
+	"author": "Joey Scicluna",
 	"license": "MIT",
 	"devDependencies": {
 		"electron": "^27.0.0",
 		"electron-builder": "^24.6.4"
 	},
 	"build": {
-		"appId": "com.yourname.youtube-music-desktop",
+		"appId": "com.youtube-music.desktop",
 		"productName": "YouTube Music Desktop",
 		"directories": {
 			"output": "dist"
 		},
 		"files": [
 			"src/**/*",
-			"node_modules/**/*"
+			"assets/**/*",
+			"node_modules/**/*",
+			"package.json"
 		],
 		"win": {
 			"target": "nsis",
-			"icon": "assets/icon.ico"
+			"icon": "assets/YouTubeMusic_Logo.ico"
 		},
 		"nsis": {
 			"oneClick": false,
-			"allowToChangeInstallationDirectory": true
+			"allowToChangeInstallationDirectory": true,
+			"createDesktopShortcut": true,
+			"createStartMenuShortcut": true
 		}
 	}
 }

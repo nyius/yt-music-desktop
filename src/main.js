@@ -18,7 +18,7 @@ function createWindow() {
 			webSecurity: true,
 			webviewTag: true, // Enable webview tag
 		},
-		icon: path.join(__dirname, '..', 'assets', 'icon.png'),
+		icon: path.join(__dirname, '..', 'assets', 'YouTubeMusic_Logo.png'),
 		title: 'YouTube Music Desktop',
 		show: false,
 	});
@@ -26,7 +26,40 @@ function createWindow() {
 	// Create application menu
 	const template = [
 		{
-			label: 'Application',
+			label: '←',
+			accelerator: 'Alt+Left',
+			click: () => {
+				mainWindow.webContents.executeJavaScript(`
+					if (document.getElementById('webview') && document.getElementById('webview').canGoBack()) {
+						document.getElementById('webview').goBack();
+					}
+				`);
+			},
+		},
+		{
+			label: '→',
+			accelerator: 'Alt+Right',
+			click: () => {
+				mainWindow.webContents.executeJavaScript(`
+					if (document.getElementById('webview') && document.getElementById('webview').canGoForward()) {
+						document.getElementById('webview').goForward();
+					}
+				`);
+			},
+		},
+		{
+			label: '⟳',
+			accelerator: 'F5',
+			click: () => {
+				mainWindow.webContents.executeJavaScript(`
+					if (document.getElementById('webview')) {
+						document.getElementById('webview').reload();
+					}
+				`);
+			},
+		},
+		{
+			label: 'File',
 			submenu: [
 				{
 					label: 'Clear Login Data',
@@ -46,6 +79,7 @@ function createWindow() {
 				},
 			],
 		},
+
 		{
 			label: 'View',
 			submenu: [
@@ -98,21 +132,13 @@ function createWindow() {
 						mainWindow.webContents
 							.executeJavaScript(
 								`
-							console.log('Menu: Toggle Audio Normalization clicked');
 							
 							if (document.getElementById('webview')) {
-								console.log('Menu: Webview found, executing toggleAudioNormalization');
-								console.log('Menu: Webview src:', document.getElementById('webview').src);
-								console.log('Menu: Webview ready state:', document.getElementById('webview').getWebContents ? 'WebContents available' : 'WebContents not available');
 								
-								// First try a simple test
 								document.getElementById('webview').executeJavaScript('console.log("Webview: Simple test successful"); "test-result"')
 									.then(result => {
-										console.log('Menu: Simple test completed successfully, result:', result);
-										
 										// Now try the actual toggle
 										const script = \`
-											console.log("Webview: About to toggle audio normalization");
 											if (window.toggleAudioNormalization) {
 												window.toggleAudioNormalization();
 												console.log("Webview: Audio normalization toggled");

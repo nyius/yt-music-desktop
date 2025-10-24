@@ -7,13 +7,6 @@
 		<style>
 			:root {
 				--zoom-level: 1;
-				--nav-height: calc(50px * var(--zoom-level));
-				--nav-padding: calc(15px * var(--zoom-level));
-				--nav-gap: calc(8px * var(--zoom-level));
-				--button-size: calc(32px * var(--zoom-level));
-				--button-font-size: calc(14px * var(--zoom-level));
-				--title-font-size: calc(14px * var(--zoom-level));
-				--border-radius: calc(6px * var(--zoom-level));
 			}
 
 			* {
@@ -30,74 +23,6 @@
 				background: #000;
 			}
 
-			.navigation-bar {
-				height: var(--nav-height);
-				background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
-				border-bottom: 1px solid #333;
-				display: flex;
-				align-items: center;
-				padding: 0 var(--nav-padding);
-				gap: var(--nav-gap);
-				-webkit-app-region: drag;
-				z-index: 1000;
-			}
-
-			.nav-button {
-				width: var(--button-size);
-				height: var(--button-size);
-				background: rgba(255, 255, 255, 0.1);
-				border: 1px solid rgba(255, 255, 255, 0.2);
-				border-radius: var(--border-radius);
-				color: #fff;
-				cursor: pointer;
-				display: flex;
-				align-items: center;
-				justify-content: center;
-				transition: all 0.2s ease;
-				-webkit-app-region: no-drag;
-				font-size: var(--button-font-size);
-				font-weight: 500;
-			}
-
-			.nav-button:hover {
-				background: rgba(255, 255, 255, 0.2);
-				border-color: rgba(255, 255, 255, 0.3);
-				transform: translateY(-1px);
-			}
-
-			.nav-button:active {
-				transform: translateY(0);
-				background: rgba(255, 255, 255, 0.15);
-			}
-
-			.nav-button:disabled {
-				opacity: 0.4;
-				cursor: not-allowed;
-				transform: none;
-			}
-
-			.nav-button:disabled:hover {
-				background: rgba(255, 255, 255, 0.1);
-				border-color: rgba(255, 255, 255, 0.2);
-				transform: none;
-			}
-
-			.nav-separator {
-				width: 1px;
-				height: calc(20px * var(--zoom-level));
-				background: rgba(255, 255, 255, 0.2);
-				margin: 0 var(--nav-gap);
-			}
-
-			.nav-title {
-				color: #fff;
-				font-size: var(--title-font-size);
-				font-weight: 500;
-				margin-left: auto;
-				margin-right: var(--nav-padding);
-				opacity: 0.8;
-			}
-
 			.content-frame {
 				flex: 1;
 				width: 100%;
@@ -111,67 +36,18 @@
 				left: 50%;
 				transform: translate(-50%, -50%);
 				color: #fff;
-				font-size: calc(16px * var(--zoom-level));
+				font-size: 16px;
 				z-index: 10;
-			}
-
-			/* Audio normalization indicator */
-			.audio-indicator {
-				width: calc(8px * var(--zoom-level));
-				height: calc(8px * var(--zoom-level));
-				border-radius: 50%;
-				background: #4caf50;
-				margin-left: auto;
-				margin-right: calc(10px * var(--zoom-level));
-				opacity: 0.8;
-				transition: opacity 0.3s ease;
-			}
-
-			.audio-indicator.disabled {
-				background: #f44336;
-				opacity: 0.6;
-			}
-
-			/* Tooltip styles */
-			.nav-button[title]:hover::after {
-				content: attr(title);
-				position: absolute;
-				bottom: -30px;
-				left: 50%;
-				transform: translateX(-50%);
-				background: rgba(0, 0, 0, 0.8);
-				color: white;
-				padding: 4px 8px;
-				border-radius: 4px;
-				font-size: 12px;
-				white-space: nowrap;
-				z-index: 1001;
-				pointer-events: none;
-			}
-
-			.nav-button {
-				position: relative;
 			}
 		</style>
 	</head>
 	<body>
-		<div class="navigation-bar">
-			<button class="nav-button" id="backBtn" title="Go Back (Alt+Left)">←</button>
-			<button class="nav-button" id="forwardBtn" title="Go Forward (Alt+Right)">→</button>
-			<button class="nav-button" id="refreshBtn" title="Refresh (F5)">⟳</button>
-
-			<div class="nav-separator"></div>
-		</div>
-
 		<div class="loading" id="loading">Loading YouTube Music...</div>
 
 		<webview id="webview" class="content-frame" nodeintegration="false" webpreferences="contextIsolation=true" partition="persist:youtube-music"></webview>
 
 		<script>
 			const webview = document.getElementById('webview');
-			const backBtn = document.getElementById('backBtn');
-			const forwardBtn = document.getElementById('forwardBtn');
-			const refreshBtn = document.getElementById('refreshBtn');
 			const loading = document.getElementById('loading');
 
 			// Zoom functionality
@@ -181,7 +57,7 @@
 			const zoomStep = 0.1;
 
 			function updateZoom() {
-				// Update CSS custom property for navigation bar scaling
+				// Update CSS custom property for zoom scaling
 				document.documentElement.style.setProperty('--zoom-level', zoomLevel);
 
 				// Apply zoom to webview content only if webview is ready
@@ -270,32 +146,8 @@
 				saveUrlTimeout = setTimeout(saveCurrentUrl, 1000); // Save after 1 second of inactivity
 			}
 
-			// Navigation functions
-			backBtn.addEventListener('click', () => {
-				if (webview.canGoBack()) {
-					webview.goBack();
-				}
-			});
-
-			forwardBtn.addEventListener('click', () => {
-				if (webview.canGoForward()) {
-					webview.goForward();
-				}
-			});
-
-			refreshBtn.addEventListener('click', () => {
-				webview.reload();
-			});
-
-			// Update navigation button states
-			function updateNavigationButtons() {
-				backBtn.disabled = !webview.canGoBack();
-				forwardBtn.disabled = !webview.canGoForward();
-			}
-
-			// Combined function to update navigation and save URL
+			// Combined function to handle navigation and save URL
 			function handleNavigation() {
-				updateNavigationButtons();
 				debouncedSaveUrl();
 			}
 
@@ -309,7 +161,6 @@
 
 			webview.addEventListener('did-stop-loading', () => {
 				loading.style.display = 'none';
-				updateNavigationButtons();
 				// Apply zoom after page loads
 				try {
 					webview.setZoomFactor(zoomLevel);
@@ -478,16 +329,7 @@
 
 			// Keyboard shortcuts
 			document.addEventListener('keydown', e => {
-				if (e.altKey && e.key === 'ArrowLeft') {
-					e.preventDefault();
-					backBtn.click();
-				} else if (e.altKey && e.key === 'ArrowRight') {
-					e.preventDefault();
-					forwardBtn.click();
-				} else if (e.key === 'F5') {
-					e.preventDefault();
-					refreshBtn.click();
-				} else if (e.ctrlKey && (e.key === '=' || e.key === '+')) {
+				if (e.ctrlKey && (e.key === '=' || e.key === '+')) {
 					e.preventDefault();
 					zoomIn();
 				} else if (e.ctrlKey && (e.key === '-' || e.key === '_')) {
