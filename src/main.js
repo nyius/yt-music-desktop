@@ -12,12 +12,11 @@ function createWindow() {
 		width: 1200,
 		height: 800,
 		webPreferences: {
-			nodeIntegration: false,
-			contextIsolation: true,
+			nodeIntegration: true,
+			contextIsolation: false,
 			enableRemoteModule: false,
 			webSecurity: true,
-			preload: path.join(__dirname, 'preload.js'),
-			partition: 'persist:youtube-music', // Enable persistent storage
+			webviewTag: true, // Enable webview tag
 		},
 		icon: path.join(__dirname, '..', 'assets', 'icon.png'),
 		title: 'YouTube Music Desktop',
@@ -27,48 +26,22 @@ function createWindow() {
 	// Create application menu
 	const template = [
 		{
-			label: 'Navigation',
+			label: 'Application',
 			submenu: [
-				{
-					label: 'Back',
-					accelerator: 'Alt+Left',
-					click: () => {
-						if (mainWindow.webContents.canGoBack()) {
-							mainWindow.webContents.goBack();
-						}
-					},
-				},
-				{
-					label: 'Forward',
-					accelerator: 'Alt+Right',
-					click: () => {
-						if (mainWindow.webContents.canGoForward()) {
-							mainWindow.webContents.goForward();
-						}
-					},
-				},
-				{
-					label: 'Refresh',
-					accelerator: 'F5',
-					click: () => {
-						mainWindow.webContents.reload();
-					},
-				},
-				{ type: 'separator' },
-				{
-					label: 'Home',
-					accelerator: 'Ctrl+H',
-					click: () => {
-						mainWindow.loadURL('https://music.youtube.com/');
-					},
-				},
-				{ type: 'separator' },
 				{
 					label: 'Clear Login Data',
 					click: async () => {
 						const ses = session.fromPartition('persist:youtube-music');
 						await ses.clearStorageData();
-						mainWindow.loadURL('https://music.youtube.com/');
+						mainWindow.loadFile(path.join(__dirname, 'renderer.html'));
+					},
+				},
+				{ type: 'separator' },
+				{
+					label: 'Quit',
+					accelerator: 'Ctrl+Q',
+					click: () => {
+						app.quit();
 					},
 				},
 			],
@@ -88,6 +61,28 @@ function createWindow() {
 					accelerator: 'F12',
 					click: () => {
 						mainWindow.webContents.toggleDevTools();
+					},
+				},
+				{ type: 'separator' },
+				{
+					label: 'Zoom In',
+					accelerator: 'Ctrl+=',
+					click: () => {
+						mainWindow.webContents.executeJavaScript('window.zoomIn && window.zoomIn()');
+					},
+				},
+				{
+					label: 'Zoom Out',
+					accelerator: 'Ctrl+-',
+					click: () => {
+						mainWindow.webContents.executeJavaScript('window.zoomOut && window.zoomOut()');
+					},
+				},
+				{
+					label: 'Reset Zoom',
+					accelerator: 'Ctrl+0',
+					click: () => {
+						mainWindow.webContents.executeJavaScript('window.resetZoom && window.resetZoom()');
 					},
 				},
 			],
@@ -152,8 +147,8 @@ function createWindow() {
 		callback(allowedPermissions.includes(permission));
 	});
 
-	// Load YouTube Music
-	mainWindow.loadURL('https://music.youtube.com/');
+	// Load our custom renderer with navigation bar
+	mainWindow.loadFile(path.join(__dirname, 'renderer.html'));
 
 	// Show window when ready
 	mainWindow.once('ready-to-show', () => {

@@ -5,22 +5,29 @@ A simple desktop application for Windows that displays YouTube Music with naviga
 ## Features
 
 -   Loads YouTube Music (https://music.youtube.com/) in a dedicated window
+-   **Custom Navigation Bar**: Built-in navigation controls with visual buttons
 -   **Persistent Login**: Stays logged in to your YouTube Music account between app sessions
 -   **Audio Normalization**: Automatically balances volume levels between songs to prevent loud/quiet inconsistencies
--   Navigation controls:
-    -   Back (Alt+Left)
-    -   Forward (Alt+Right)
-    -   Refresh (F5)
-    -   Home (Ctrl+H) - returns to YouTube Music homepage
-    -   Clear Login Data - logs you out and clears stored session data
--   Audio controls:
-    -   Toggle Audio Normalization (Ctrl+N) - enable/disable volume balancing
-    -   Audio Info - check normalization status
+-   **Interface Scaling**: Zoom in/out functionality that scales both YouTube Music content and navigation bar
+-   **Navigation Controls** (available in navigation bar and keyboard shortcuts):
+    -   Back (Alt+Left) - ← button
+    -   Forward (Alt+Right) - → button
+    -   Refresh (F5) - ⟳ button
+    -   Home (Ctrl+H) - 🏠 button (returns to YouTube Music homepage)
+    -   Audio Normalization Toggle (Ctrl+N) - 🔊 button with status indicator
+-   **Zoom Controls** (available in navigation bar and keyboard shortcuts):
+    -   Zoom In (Ctrl++) - + button
+    -   Zoom Out (Ctrl+-) - − button
+    -   Reset Zoom (Ctrl+0) - ⚬ button
+-   **Visual Indicators**:
+    -   Navigation buttons show enabled/disabled states
+    -   Audio normalization status indicator (green = on, red = off)
+    -   Loading indicator when pages are loading
+    -   Zoom level persists between app sessions
 -   Additional shortcuts:
     -   Toggle Fullscreen (F11)
     -   Developer Tools (F12)
-    -   Minimize (Ctrl+M)
-    -   Close (Ctrl+W)
+    -   Clear Login Data (Application menu)
 
 ## Getting Started
 
