@@ -61,13 +61,6 @@ function createApplicationMenu(mainWindow) {
 						mainWindow.setFullScreen(!mainWindow.isFullScreen());
 					},
 				},
-				{
-					label: 'Toggle Developer Tools',
-					accelerator: 'F12',
-					click: () => {
-						mainWindow.webContents.toggleDevTools();
-					},
-				},
 				{ type: 'separator' },
 				{
 					label: 'Zoom In',

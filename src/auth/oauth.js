@@ -6,8 +6,8 @@ let oauthServer;
 
 // OAuth 2.0 configuration
 const OAUTH_CONFIG = {
-	clientId: '1067808876711-bjdkj5cufr43l7r0f8edjnlekfqkc1pf.apps.googleusercontent.com',
-	clientSecret: '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', // Note: In production, store securely
+	clientId: '62751869545-00tfbj38if8tqobe08kk5m7ipqhhlsot.apps.googleusercontent.com',
+	clientSecret: '',
 	redirectUri: 'http://localhost:8080/oauth/callback',
 	scope: 'openid email profile https://www.googleapis.com/auth/youtube',
 	responseType: 'code',
