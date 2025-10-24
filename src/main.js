@@ -1,10 +1,44 @@
-const { app, BrowserWindow, Menu, shell, session } = require('electron');
+const { app, BrowserWindow, Menu, shell, session, ipcMain } = require('electron');
 const path = require('path');
+const { Deeplink } = require('electron-deeplink');
 
 let mainWindow;
+let deeplink;
 
 // Configure app user data directory for persistent storage
 app.setPath('userData', path.join(app.getPath('appData'), 'YouTube Music Desktop'));
+
+// Set up custom protocol for OAuth callback
+const isDev = process.env.NODE_ENV === 'development';
+const protocol = 'ytmusic-desktop';
+
+if (!isDev) {
+	// Register protocol for production
+	app.setAsDefaultProtocolClient(protocol);
+}
+
+// Handle OAuth callback
+function handleOAuthCallback(url) {
+	console.log('OAuth callback received:', url);
+
+	// Parse the URL to extract tokens/code
+	const urlObj = new URL(url);
+	const code = urlObj.searchParams.get('code');
+	const error = urlObj.searchParams.get('error');
+
+	if (error) {
+		console.error('OAuth error:', error);
+		return;
+	}
+
+	if (code) {
+		console.log('OAuth code received:', code);
+		// Send the code to the renderer process
+		if (mainWindow) {
+			mainWindow.webContents.send('oauth-success', { code });
+		}
+	}
+}
 
 function createWindow() {
 	// Create the browser window
@@ -25,6 +59,47 @@ function createWindow() {
 
 	// Create application menu
 	const template = [
+		{
+			label: 'Application',
+			submenu: [
+				{
+					label: 'OAuth Login',
+					click: () => {
+						// Start OAuth flow - this will open browser and redirect back to our app
+						const clientId = 'your-google-client-id'; // You'll need to register this
+						const redirectUri = `${protocol}://oauth/callback`;
+						const scope = 'https://www.googleapis.com/auth/youtube';
+						const oauthUrl = `https://accounts.google.com/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${encodeURIComponent(scope)}`;
+
+						shell.openExternal(oauthUrl);
+					},
+				},
+				{
+					label: 'Login in Browser (Simple)',
+					click: () => {
+						// Simple browser login as backup
+						shell.openExternal('https://accounts.google.com/signin/v2/identifier?service=youtube&continue=https%3A%2F%2Fmusic.youtube.com%2F');
+					},
+				},
+				{ type: 'separator' },
+				{
+					label: 'Clear Login Data',
+					click: async () => {
+						const ses = session.fromPartition('persist:youtube-music');
+						await ses.clearStorageData();
+						mainWindow.loadFile(path.join(__dirname, 'renderer.html'));
+					},
+				},
+				{ type: 'separator' },
+				{
+					label: 'Quit',
+					accelerator: 'Ctrl+Q',
+					click: () => {
+						app.quit();
+					},
+				},
+			],
+		},
 		{
 			label: '←',
 			accelerator: 'Alt+Left',
@@ -205,8 +280,17 @@ function createWindow() {
 	// Configure session for persistent login
 	const ses = session.fromPartition('persist:youtube-music');
 
-	// Set user agent to avoid potential issues with YouTube Music
-	ses.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
+	// Set user agent to Firefox to bypass Google's Electron detection
+	ses.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:130.0) Gecko/20100101 Firefox/130.0');
+
+	// Add Firefox-compatible headers to match the user agent
+	ses.webRequest.onBeforeSendHeaders((details, callback) => {
+		// Remove Chrome-specific headers and add Firefox-like headers
+		delete details.requestHeaders['sec-ch-ua'];
+		delete details.requestHeaders['sec-ch-ua-mobile'];
+		delete details.requestHeaders['sec-ch-ua-platform'];
+		callback({ requestHeaders: details.requestHeaders });
+	});
 
 	// Enable persistent storage for cookies and local storage
 	ses.setPermissionRequestHandler((webContents, permission, callback) => {
@@ -221,6 +305,13 @@ function createWindow() {
 	// Show window when ready
 	mainWindow.once('ready-to-show', () => {
 		mainWindow.show();
+
+		// Initialize deeplink for OAuth callbacks
+		deeplink = new Deeplink({ app, mainWindow, protocol, isDev });
+		deeplink.on('received', link => {
+			console.log('Deeplink received:', link);
+			handleOAuthCallback(link);
+		});
 	});
 
 	// Handle external links

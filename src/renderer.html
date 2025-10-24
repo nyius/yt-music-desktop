@@ -119,7 +119,6 @@
 					const currentUrl = webview.getURL();
 					if (currentUrl && currentUrl.includes('music.youtube.com')) {
 						localStorage.setItem('lastVisitedUrl', currentUrl);
-						console.log('Saved URL:', currentUrl);
 					}
 				} catch (error) {
 					console.warn('Failed to save current URL:', error);
@@ -130,7 +129,6 @@
 				try {
 					const savedUrl = localStorage.getItem('lastVisitedUrl');
 					if (savedUrl && savedUrl.includes('music.youtube.com')) {
-						console.log('Loading saved URL:', savedUrl);
 						return savedUrl;
 					}
 				} catch (error) {
@@ -177,20 +175,18 @@
 
 			// Multiple event listeners for better debugging
 			webview.addEventListener('did-attach', () => {
-				console.log('WEBVIEW: did-attach event fired');
+				// console.log('WEBVIEW: did-attach event fired');
 			});
 
 			let scriptInjected = false; // Prevent multiple injections
 
 			webview.addEventListener('did-finish-load', () => {
-				console.log('WEBVIEW: did-finish-load event fired');
 				if (!scriptInjected) {
 					injectAudioScript();
 				}
 			});
 
 			webview.addEventListener('dom-ready', () => {
-				console.log('WEBVIEW: dom-ready event fired');
 				if (!scriptInjected) {
 					injectAudioScript();
 				}
@@ -312,7 +308,7 @@
             `
 					)
 					.then(() => {
-						console.log('WEBVIEW: Audio normalization script injected successfully');
+						//
 					})
 					.catch(error => {
 						console.error('WEBVIEW: Failed to inject audio normalization script:', error);
@@ -321,7 +317,6 @@
 				// Apply zoom to webview after script injection
 				try {
 					webview.setZoomFactor(zoomLevel);
-					console.log('WEBVIEW: Applied zoom factor after script injection:', zoomLevel);
 				} catch (error) {
 					console.warn('WEBVIEW: Failed to apply zoom after script injection:', error);
 				}
@@ -346,7 +341,27 @@
 
 			// Load the last visited URL or default to YouTube Music homepage
 			const initialUrl = loadLastVisitedUrl();
+
+			// Use loadURL with Firefox user agent to bypass Google's Electron detection
+			webview.addEventListener(
+				'dom-ready',
+				() => {
+					console.log('WEBVIEW: Setting Firefox user agent');
+					webview.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:130.0) Gecko/20100101 Firefox/130.0');
+				},
+				{ once: true }
+			);
+
 			webview.src = initialUrl;
+
+			// Handle OAuth success from main process
+			const { ipcRenderer } = require('electron');
+			ipcRenderer.on('oauth-success', (event, data) => {
+				console.log('OAuth success received:', data);
+				// You can use the OAuth code here to make authenticated requests
+				// For now, just reload the page to check if login worked
+				webview.reload();
+			});
 
 			// Save URL when window is about to close
 			window.addEventListener('beforeunload', () => {

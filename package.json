@@ -1,6 +1,6 @@
 {
 	"name": "youtube-music-desktop",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"description": "Desktop application for YouTube Music with navigation controls",
 	"main": "src/main.js",
 	"scripts": {
@@ -37,11 +37,22 @@
 			"target": "nsis",
 			"icon": "assets/YouTubeMusic_Logo.ico"
 		},
+		"protocols": [
+			{
+				"name": "YT Music Desktop OAuth",
+				"schemes": [
+					"ytmusic-desktop"
+				]
+			}
+		],
 		"nsis": {
 			"oneClick": false,
 			"allowToChangeInstallationDirectory": true,
 			"createDesktopShortcut": true,
 			"createStartMenuShortcut": true
 		}
+	},
+	"dependencies": {
+		"electron-deeplink": "^1.0.10"
 	}
 }
