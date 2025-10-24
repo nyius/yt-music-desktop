@@ -356,17 +356,18 @@
                 if (!window.audioNormalizationInitialized) {
                     window.audioNormalizationInitialized = true;
                     
-                    let audioContext;
-                    let compressor;
-                    let gainNode;
-                    let mediaElementSource;
-                    let isNormalizationEnabled = true;
+                    // Make variables accessible globally for debugging
+                    window.audioContext = null;
+                    window.compressor = null;
+                    window.gainNode = null;
+                    window.mediaElementSource = null;
+                    window.isNormalizationEnabled = true;
                     console.log('WEBVIEW SCRIPT: Audio normalization script loaded')
 
                 function initializeAudioNormalization() {
                     const observer = new MutationObserver(() => {
                         const videoElement = document.querySelector('video');
-                        if (videoElement && !mediaElementSource) {
+                        if (videoElement && !window.mediaElementSource) {
                             setupAudioProcessing(videoElement);
                         }
                     });
@@ -378,7 +379,7 @@
 
                     setTimeout(() => {
                         const videoElement = document.querySelector('video');
-                        if (videoElement && !mediaElementSource) {
+                        if (videoElement && !window.mediaElementSource) {
                             setupAudioProcessing(videoElement);
                         }
                     }, 2000);
@@ -386,25 +387,25 @@
 
                 function setupAudioProcessing(videoElement) {
                     try {
-                        audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                        mediaElementSource = audioContext.createMediaElementSource(videoElement);
+                        window.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                        window.mediaElementSource = window.audioContext.createMediaElementSource(videoElement);
                         
-                        compressor = audioContext.createDynamicsCompressor();
-                        compressor.threshold.setValueAtTime(-24, audioContext.currentTime);
-                        compressor.knee.setValueAtTime(30, audioContext.currentTime);
-                        compressor.ratio.setValueAtTime(12, audioContext.currentTime);
-                        compressor.attack.setValueAtTime(0.003, audioContext.currentTime);
-                        compressor.release.setValueAtTime(0.25, audioContext.currentTime);
+                        window.compressor = window.audioContext.createDynamicsCompressor();
+                        window.compressor.threshold.setValueAtTime(-24, window.audioContext.currentTime);
+                        window.compressor.knee.setValueAtTime(30, window.audioContext.currentTime);
+                        window.compressor.ratio.setValueAtTime(12, window.audioContext.currentTime);
+                        window.compressor.attack.setValueAtTime(0.003, window.audioContext.currentTime);
+                        window.compressor.release.setValueAtTime(0.25, window.audioContext.currentTime);
                         
-                        gainNode = audioContext.createGain();
-                        gainNode.gain.setValueAtTime(0.8, audioContext.currentTime);
+                        window.gainNode = window.audioContext.createGain();
+                        window.gainNode.gain.setValueAtTime(0.8, window.audioContext.currentTime);
                         
-                        if (isNormalizationEnabled) {
-                            mediaElementSource.connect(compressor);
-                            compressor.connect(gainNode);
-                            gainNode.connect(audioContext.destination);
+                        if (window.isNormalizationEnabled) {
+                            window.mediaElementSource.connect(window.compressor);
+                            window.compressor.connect(window.gainNode);
+                            window.gainNode.connect(window.audioContext.destination);
                         } else {
-                            mediaElementSource.connect(audioContext.destination);
+                            window.mediaElementSource.connect(window.audioContext.destination);
                         }
                         
                         console.log('Audio normalization initialized successfully');
@@ -421,27 +422,27 @@
                 }
 
                 function toggleAudioNormalization() {
-                    if (!audioContext || !mediaElementSource) {
+                    if (!window.audioContext || !window.mediaElementSource) {
                         console.warn('Audio normalization not initialized');
                         return;
                     }
                     
                     try {
-                        mediaElementSource.disconnect();
-                        if (compressor) compressor.disconnect();
-                        if (gainNode) gainNode.disconnect();
+                        window.mediaElementSource.disconnect();
+                        if (window.compressor) window.compressor.disconnect();
+                        if (window.gainNode) window.gainNode.disconnect();
                         
-                        if (isNormalizationEnabled) {
-                            mediaElementSource.connect(audioContext.destination);
+                        if (window.isNormalizationEnabled) {
+                            window.mediaElementSource.connect(window.audioContext.destination);
                             console.log('Audio normalization disabled');
                         } else {
-                            mediaElementSource.connect(compressor);
-                            compressor.connect(gainNode);
-                            gainNode.connect(audioContext.destination);
+                            window.mediaElementSource.connect(window.compressor);
+                            window.compressor.connect(window.gainNode);
+                            window.gainNode.connect(window.audioContext.destination);
                             console.log('Audio normalization enabled');
                         }
                         
-                        isNormalizationEnabled = !isNormalizationEnabled;
+                        window.isNormalizationEnabled = !window.isNormalizationEnabled;
                         
                     } catch (error) {
                         console.warn('Error toggling audio normalization:', error);
